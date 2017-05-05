@@ -3,7 +3,7 @@
 #include<stdlib.h>
 
 void LCS(char *x, int xl, char *y, int yl, int **c, int **b);
-//×î³¤¹«¹²×Ó´®      xl: x's length   c: record the length of longest CS b: break point 
+//æœ€é•¿å…¬å…±å­ä¸²    xl: x's length   c: record the length of longest CS b: break point 
 
 int main()
 {
@@ -35,7 +35,7 @@ int main()
 
 	i = xlength;
 	j = ylength;
-	for (k = 0; k < c[xlength][ylength];)		//ÄæĞòÊä³ö
+	for (k = 0; k < c[xlength][ylength];)		//Ã„Ã¦ÃÃ²ÃŠÃ¤Â³Ã¶
 	{
 		if (1 == b[i][j])
 		{
