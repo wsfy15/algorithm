@@ -3,7 +3,7 @@
 #include<stdlib.h>
 
 int MaxSum(int* data, int n, int& s, int& e);	
-//求最大字段和	s:起点 e:终点
+//姹傛渶澶у瓧娈靛拰	s:璧风偣 e:缁堢偣
 
 int main()
 {
