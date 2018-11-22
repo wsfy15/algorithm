@@ -12,17 +12,17 @@ typedef struct
 {
 	int id;
 	double dist;
-	double lati;		//Î³¶È
-	double longti;		//¾­¶È
+	double lati;		//çº¬åº¦
+	double longti;		//ç»åº¦
 	double radLat, radLon;
 }Data;
 
-double Distance(Data *a, Data *b);						//ÇóÁ½µã¾àÀë
-void QuickSort_Longti(Data *a, int low, int high);		//¾­¶È¿ìËÙÅÅĞò											
-int Partition_Longti(Data *a, int low, int high);		//¿ìËÙÅÅĞòÊ±µÄ»®·Ö
-void QuickSort_Lati(Data* a, int low, int high);		//Î³¶ÈÅÅĞò
+double Distance(Data *a, Data *b);
+void QuickSort_Longti(Data *a, int low, int high);		//ç»åº¦å¿«é€Ÿæ’åº											
+int Partition_Longti(Data *a, int low, int high);		//å¿«é€Ÿæ’åºæ—¶çš„åˆ’åˆ†
+void QuickSort_Lati(Data* a, int low, int high);		//çº¬åº¦æ’åº
 int Partition_Lati(Data* a, int low, int high);		
-void closest(Data *pri, int low, int high, Data& a, Data& b, double& min);//Çó×î½Ó½üµã¶Ô
+void closest(Data *pri, int low, int high, Data& a, Data& b, double& min);
 
 int main(void)
 {
@@ -35,7 +35,7 @@ int main(void)
 	fp = fopen("data.txt", "r");
 	if (fp == NULL)
 	{
-		printf("fail to open data.txt\n");
+		printf("fail to open");
 		exit(1);
 	}
 
@@ -46,63 +46,16 @@ int main(void)
 		data[i].radLon = data[i].longti * PI / 180;
 	}
 	fclose(fp);
-	Data data_temp[1050];
-	memcpy(data_temp, data, sizeof(Data) * 1050);
 
-	//Çó×î½Ó½üµã¶Ô
 	Data a, b;
 	double min = INFINITY;
 	memset(&a, 0, sizeof(Data));
 	memset(&b, 0, sizeof(Data));
 	
 	closest(data, 0, 1032, a, b, min);
-	finish = clock();
-	printf("×î½Ó½üµã¶Ô:\n");
-	printf("a.id: %d\tb.id: %d\tdistance: %.9lfkm\n", a.id, b.id, min);
-	printf("time: %lfs\n", (double)(finish - start) / CLOCKS_PER_SEC);
-
-	//Çó´Î½Ó½üµã¶Ô
-	start = clock();
-	Data ra, rb;
-	double rmin = INFINITY;	
-	memset(&ra, 0, sizeof(Data));
-	memset(&rb, 0, sizeof(Data));
-	
-
-	for (i = 0; i < 1033; i++)
-	{
-		if (data[i].id == a.id)
-		{
-			data[i] = data[1032];		//½«AÒÆ³öÒªµã¼¯ºÏ
-			break;
-		}
-	}
-	closest(data, 0, 1031, ra, rb, rmin);
-
-	for (i = 0; i < 1033; i++)
-	{
-		if (data_temp[i].id == b.id)
-		{
-			data_temp[i] = data_temp[1032];		//½«BÒÆ³öÒªµã¼¯ºÏ
-			break;
-		}
-	}
-	memset(&a, 0, sizeof(Data));
-	memset(&b, 0, sizeof(Data));
-	min = INFINITY;
-	closest(data_temp, 0, 1031, a, b, min);
-
-	if (rmin < min)
-	{
-		min = rmin;
-		a = ra;
-		b = rb;
-	}
 
 	finish = clock();
-	printf("´Î×î½Ó½üµã¶Ô:\n");
-	printf("a.id: %d\tb.id: %d\tdistance: %.9lfkm\n", a.id, b.id, min);
-	printf("time: %lfs\n", (double)(finish - start) / CLOCKS_PER_SEC);
+	printf("%d\t%d\t%lf\t%lfs\n", a.id, b.id, min, (double)(finish - start) / CLOCKS_PER_SEC);
 	return 0;
 }
 
@@ -112,7 +65,125 @@ double Distance(Data *a, Data *b)
 	return EQUATOR_RADIUS*acos(cos(a->radLat) * cos(b->radLat) * cos(a->radLon - b->radLon) + sin(a->radLat)*sin(b->radLat));
 }//Distance
 
+/**/
+void closest(Data *pri, int low,int high, Data& a, Data& b, double& min)
+{
+	if (high - low <= 1)
+		return;
+	if (high - low == 2)
+	{
+		min = Distance(pri + low, pri + high);
+		a = *(pri + low);
+		b = *(pri + high);
+		return;
+	}
+	QuickSort_Longti(pri, low, high);
+	int m = (high + low) / 2;
+	double  rmin = INFINITY;
 
+	Data ra, rb;
+	memset(&ra, 0, sizeof(Data));
+	memset(&rb, 0, sizeof(Data));
+
+	closest(pri, low, m, a, b, min);
+	closest(pri, m + 1, high, ra, rb, rmin);
+
+	if (rmin < min)
+	{
+		min = rmin;
+		a = ra;
+		b = rb;
+	}
+
+	int lcount = 0, rcount = 0;
+	int i, j;
+	double mark = (pri + m)->longti;
+	Data *leftset, *rightset;
+
+	//å‚ç›´åˆ†å‰²çº¿å·¦è¾¹æ‰€æœ‰è·ç¦»åœ¨dmä¹‹å†…çš„æ‰€æœ‰ç‚¹ç»„æˆçš„é›†åˆï¼ˆæŒ‰çº¬åº¦æ’åºï¼‰	
+	for (i = m; i >= low; i--)
+	{
+		if ((pri + i)->longti + min > mark)
+			lcount++;
+		else
+			break;
+	}
+	j = m - lcount + 1;
+
+	leftset = (Data*)malloc(sizeof(Data)*lcount);
+	for (i = 0; i < lcount; i++)
+	{
+		leftset[i] = *(pri + j);
+		j++;
+	}
+	QuickSort_Lati(leftset, 0, lcount - 1);
+
+	//å‚ç›´åˆ†å‰²çº¿å³è¾¹æ‰€æœ‰è·ç¦»åœ¨dmä¹‹å†…çš„æ‰€æœ‰ç‚¹ç»„æˆçš„é›†åˆï¼ˆæŒ‰çº¬åº¦æ’åºï¼‰
+	for (i = m + 1; i <= high; i++)
+	{
+		if ((pri + i)->longti - min < mark)
+			rcount++;
+		else
+			break;
+	}
+	j = m + 1;
+
+	rightset = (Data*)malloc(sizeof(Data)*rcount);
+	for (i = 0; i < rcount; i++)
+	{
+		rightset[i] = *(pri + j);
+		j++;
+	}
+	QuickSort_Lati(rightset, 0, rcount - 1);
+
+	double mmin = INFINITY;
+	Data ma, mb;
+	memset(&ma, 0, sizeof(Data));
+	memset(&mb, 0, sizeof(Data));
+	int pos = 0;	//rightsetèµ·å§‹æ¯”è¾ƒç‚¹ä¸‹æ ‡
+	double dis = 0;
+	int temp = 0;
+	for (i = 0; i < lcount; i++)
+	{
+		j = pos;
+		temp = 0;
+		for (; j < rcount; j++)
+		{
+			dis = fabs(EQUATOR_RADIUS*acos(cos(leftset[i].radLat) * cos(rightset[j].radLat) + sin(leftset[i].radLat)*sin(rightset[j].radLat)));
+			
+			if (dis > min && temp)
+				break;
+
+			if (dis > min)
+				continue;
+
+			if (dis < min && temp==0)
+			{
+				temp = 1;
+				pos = j;
+			}
+			dis = Distance(leftset + i, rightset + j);
+			if (dis < mmin)
+			{
+				mmin = dis;
+				ma = leftset[i];
+				mb = rightset[j];
+			}
+		}
+	}
+	free(leftset);
+	free(rightset);
+	leftset = NULL;
+	rightset = NULL;
+	if (mmin < min)
+	{
+		min = mmin;
+		a = ma;
+		b = mb;
+	}
+}//closest
+
+/*
 void closest(Data *pri, int low, int high, Data& a, Data& b, double& min)
 {
 	if (high - low <= 1)
@@ -126,14 +197,13 @@ void closest(Data *pri, int low, int high, Data& a, Data& b, double& min)
 	}
 	QuickSort_Longti(pri, low, high);
 	int m = (high + low) / 2;
-	double  rmin = INFINITY;	
+	double  rmin = INFINITY;
 
 	Data ra, rb;
 	memset(&ra, 0, sizeof(Data));
 	memset(&rb, 0, sizeof(Data));
 
-	//·Ö±ğÇóÖĞµã×óÓÒµÄ×î½Ó½üµã¶Ô
-	closest(pri, low, m, a, b, min);			
+	closest(pri, low, m, a, b, min);
 	closest(pri, m + 1, high, ra, rb, rmin);
 
 	if (rmin < min)
@@ -143,17 +213,12 @@ void closest(Data *pri, int low, int high, Data& a, Data& b, double& min)
 		b = rb;
 	}
 
+	int lcount = 0, rcount = 0;
 	int i, j;
 	double mark = (pri + m)->longti;
 
 	Data leftset[800], rightset[800];
-	/*
-		ÓÃÖ¸Õë+malloc+freeµÄÊ±ºò£¬±¨´í¶ÑÒÑËğ»µ
-		ÓÃÁ´±íµÄ»°£¬ÅÅĞòÊ±²Ù×÷»áµ¼ÖÂÊ±¼ä¿ªÏúÌ«´ó
-	*/
-
-	//´¹Ö±·Ö¸îÏß×ó±ßËùÓĞ¾àÀëÔÚdmÖ®ÄÚµÄËùÓĞµã×é³ÉµÄ¼¯ºÏ£¨°´Î³¶ÈÅÅĞò£©
-	int lcount = 0;
+	//å‚ç›´åˆ†å‰²çº¿å·¦è¾¹æ‰€æœ‰è·ç¦»åœ¨dmä¹‹å†…çš„æ‰€æœ‰ç‚¹ç»„æˆçš„é›†åˆï¼ˆæŒ‰çº¬åº¦æ’åºï¼‰	
 	for (i = m; i >= low; i--)
 	{
 		if ((pri + i)->longti + min > mark)
@@ -163,39 +228,41 @@ void closest(Data *pri, int low, int high, Data& a, Data& b, double& min)
 		else
 			break;
 	}
+	j = m - lcount + 1;
+
 	QuickSort_Lati(leftset, 0, lcount - 1);
 
-	//´¹Ö±·Ö¸îÏßÓÒ±ßËùÓĞ¾àÀëÔÚdmÖ®ÄÚµÄËùÓĞµã×é³ÉµÄ¼¯ºÏ£¨°´Î³¶ÈÅÅĞò£©
-	int rcount = 0;
+	//å‚ç›´åˆ†å‰²çº¿å³è¾¹æ‰€æœ‰è·ç¦»åœ¨dmä¹‹å†…çš„æ‰€æœ‰ç‚¹ç»„æˆçš„é›†åˆï¼ˆæŒ‰çº¬åº¦æ’åºï¼‰
 	for (i = m + 1; i <= high; i++)
 	{
 		if ((pri + i)->longti - min < mark)
-			rightset[rcount++] = *(pri + i);
+			leftset[rcount++] = *(pri + i);
 		else
 			break;
 	}
+	j = m + 1;
+
 	QuickSort_Lati(rightset, 0, rcount - 1);
 
 	double mmin = INFINITY;
 	Data ma, mb;
 	memset(&ma, 0, sizeof(Data));
 	memset(&mb, 0, sizeof(Data));
-
-	int pos = 0;		//rightsetÆğÊ¼±È½ÏµãÏÂ±ê
-	double dis = 0;	
+	int pos = 0;	//rightsetèµ·å§‹æ¯”è¾ƒç‚¹ä¸‹æ ‡
+	double dis = 0;
 	int temp = 0;
 	for (i = 0; i < lcount; i++)
 	{
 		j = pos;
-		temp = 0;		//¼ÇÂ¼×ó±ßÄÇ¸öµãºÍÓÒ±ßµÄµãµÄ´¹Ö±Î³¶È¾àÀëÊÇ·ñĞ¡ÓÚÖ®Ç°Çó³öµÄmin
+		temp = 0;
 		for (; j < rcount; j++)
 		{
 			dis = fabs(EQUATOR_RADIUS*acos(cos(leftset[i].radLat) * cos(rightset[j].radLat) + sin(leftset[i].radLat)*sin(rightset[j].radLat)));
-			//Á½µãµÄ´¹Ö±Î³¶È¾àÀë£¨¼ÙÉè¾­¶ÈÏàÍ¬£©
-			if (dis > min && temp)		//ºóÃæµÄµã²»Òª¿¼ÂÇÁË
+
+			if (dis > min && temp)
 				break;
 
-			if (dis > min)				//ºóÃæµÄµã»¹ĞèÒª¿¼ÂÇ
+			if (dis > min)
 				continue;
 
 			if (dis < min && temp == 0)
@@ -203,7 +270,6 @@ void closest(Data *pri, int low, int high, Data& a, Data& b, double& min)
 				temp = 1;
 				pos = j;
 			}
-
 			dis = Distance(leftset + i, rightset + j);
 			if (dis < mmin)
 			{
@@ -221,12 +287,12 @@ void closest(Data *pri, int low, int high, Data& a, Data& b, double& min)
 		b = mb;
 	}
 }//closest
+*/
 
-
-void QuickSort_Longti(Data* a, int low, int high)	//¾­¶ÈÅÅĞò
+void QuickSort_Longti(Data* a, int low, int high)	//ç»åº¦æ’åº
 {
 	int i;
-	for (i = low; i < high; i++)		//ÅĞ¶Ï·Çµİ¼õ
+	for (i = low; i < high; i++)		//åˆ¤æ–­éé€’å‡
 	{
 		if ((a + i)->longti >(a + i + 1)->longti)
 			break;
@@ -262,10 +328,10 @@ int Partition_Longti(Data* a, int low, int high)
 	return j;
 }//Partition_Longti
 
-void QuickSort_Lati(Data* a, int low, int high)	//¾­¶ÈÅÅĞò
+void QuickSort_Lati(Data* a, int low, int high)	//ç»åº¦æ’åº
 {
 	int i;
-	for (i = low; i < high; i++)		//ÅĞ¶Ï·Çµİ¼õ
+	for (i = low; i < high; i++)		//åˆ¤æ–­éé€’å‡
 	{
 		if ((a + i)->lati >(a + i + 1)->lati)
 			break;
